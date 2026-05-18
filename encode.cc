@@ -26,7 +26,7 @@ int main(int argc, char **argv)
 		std::cerr << "Couldn't get size of file \"" << input_name << "\"." << std::endl;
 		return 1;
 	}
-	const long long MAX_SIZE = 1LL << 24;
+	const long long MAX_SIZE = 1LL << 32;
 	if (sb.st_size > MAX_SIZE) {
 		std::cerr << "Size of file \"" << input_name << "\" too large." << std::endl;
 		return 1;
