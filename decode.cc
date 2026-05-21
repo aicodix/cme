@@ -5,14 +5,22 @@ Copyright 2026 Ahmet Inan <inan@aicodix.de>
 */
 
 #include <set>
-#include <cassert>
-#include <cstdint>
-#include <fstream>
-#include <iostream>
-#include "prime_field.hh"
-#include "mersenne_packing.hh"
-#include "mersenne_horner_check.hh"
-#include "cauchy_prime_field_erasure_coding.hh"
+#include "common.hh"
+
+static void decode_m31(std::ofstream &dst, const M31 *src, int64_t bytes)
+{
+	int count = (bytes * 8 + 30) / 31;
+	M31 sub = *src++;
+	uint64_t acc = 0;
+	int64_t pos = 0;
+	for (int i = 0, k = 0; i < count; i++) {
+		uint64_t val = sub == src[i] ? 0x7FFFFFFF : src[i]();
+		acc |= val << k;
+		k += 31;
+		for (; k >= 8 && pos < bytes; pos++, acc >>= 8, k -= 8)
+			dst.put(acc & 255);
+	}
+}
 
 int main(int argc, char **argv)
 {
@@ -24,7 +32,6 @@ int main(int argc, char **argv)
 	typedef CODE::PrimeField<uint32_t, 0x7FFFFFFF> M31;
 	int *chunk_ident = nullptr;
 	M31 *chunk_values = nullptr;
-	uint8_t *chunk_data = nullptr;
 	int block_values = 0;
 	int block_count = 0;
 	int block_index = 0;
@@ -65,15 +72,13 @@ int main(int argc, char **argv)
 			hash_value = hash;
 			chunk_ident = new int[block_count];
 			chunk_values = new M31[total_values];
-			chunk_data = new uint8_t[block_bytes];
 		} else if (block_count != splits + 1 || output_bytes != size + 1LL || hash_value != hash) {
 			std::cerr << "Skipping file \"" << chunk_name << "\"." << std::endl;
 			continue;
 		}
 		list.insert(ident);
 		chunk_ident[block_index] = ident + block_count;
-		chunk_file.read(reinterpret_cast<char *>(chunk_data), block_bytes);
-		CODE::MersennePacking::pack(chunk_values + block_values * i, chunk_data, block_values, block_bytes);
+		pack_m31(chunk_values + block_values * i, chunk_file, block_values, block_bytes);
 		if (++block_index >= block_count)
 			break;
 	}
@@ -86,7 +91,6 @@ int main(int argc, char **argv)
 	for (int i = 0; i < block_count; ++i)
 		cme.decode(output_values + block_values * i, chunk_values, chunk_ident, i, block_values, block_count);
 	delete[] chunk_ident;
-	delete[] chunk_data;
 	CODE::MersenneHornerCheck mhc;
 	for (int i = 0; i < total_values; ++i)
 		mhc(output_values[i]);
@@ -94,9 +98,6 @@ int main(int argc, char **argv)
 		std::cerr << "hash value does not match!" << std::endl;
 		return 1;
 	}
-	uint8_t *output_data = new uint8_t[output_bytes];
-	CODE::MersennePacking::decode(output_data, output_values, output_bytes);
-	delete[] output_values;
 	const char *output_name = argv[1];
 	if (output_name[0] == '-' && output_name[1] == 0)
 		output_name = "/dev/stdout";
@@ -105,8 +106,8 @@ int main(int argc, char **argv)
 		std::cerr << "Couldn't open file \"" << output_name << "\" for writing." << std::endl;
 		return 1;
 	}
-	output_file.write(reinterpret_cast<char *>(output_data), output_bytes);
-	delete[] output_data;
+	decode_m31(output_file, output_values, output_bytes);
+	delete[] output_values;
 	return 0;
 }
 

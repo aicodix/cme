@@ -23,10 +23,10 @@ test: encode decode
 	diff -q -s input.dat output.dat
 	rm input.dat output.dat $(CHUNKS)
 
-encode: encode.cc
+encode: encode.cc common.hh
 	$(CXX) $(CXXFLAGS) $< -o $@
 
-decode: decode.cc
+decode: decode.cc common.hh
 	$(CXX) $(CXXFLAGS) $< -o $@
 
 .PHONY: clean
