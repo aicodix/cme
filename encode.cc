@@ -119,6 +119,7 @@ int main(int argc, char **argv)
 		unpack_m31(chunk_file, chunk_values, block_values, block_bytes);
 	}
 	delete[] input_values;
+	delete[] chunk_values;
 	return 0;
 }
 

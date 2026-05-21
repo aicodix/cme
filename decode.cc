@@ -90,6 +90,7 @@ int main(int argc, char **argv)
 	for (int i = 0; i < block_count; ++i)
 		cme.decode(output_values + block_values * i, chunk_values, chunk_ident, i, block_values, block_count);
 	delete[] chunk_ident;
+	delete[] chunk_values;
 	CODE::MersenneHornerCheck mhc;
 	for (int i = 0; i < total_values; ++i)
 		mhc(output_values[i]);
