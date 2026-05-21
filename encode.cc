@@ -66,8 +66,8 @@ int main(int argc, char **argv)
 	}
 	long long input_bytes = sb.st_size;
 	int split_count = std::atoi(argv[2]);
-	if (split_count < 0 || split_count > 255) {
-		std::cerr << "Number of splits must be between 0 and 255." << std::endl;
+	if (split_count < 0 || split_count > 1023) {
+		std::cerr << "Number of splits must be between 0 and 1023." << std::endl;
 		return 1;
 	}
 	int chunk_count = argc - 3;
@@ -76,8 +76,8 @@ int main(int argc, char **argv)
 		std::cerr << "Need at least " << block_count << " chunks." << std::endl;
 		return 1;
 	}
-	if (chunk_count > 65536) {
-		std::cerr << "Maximum of 65536 chunks are supported." << std::endl;
+	if (chunk_count > 16384) {
+		std::cerr << "Maximum of 16384 chunks are supported." << std::endl;
 		return 1;
 	}
 	std::cerr << "CME(" << chunk_count << ", " << block_count << ")" << std::endl;
@@ -108,10 +108,8 @@ int main(int argc, char **argv)
 			return 1;
 		}
 		chunk_file.write("CME", 3);
-		uint8_t splits = split_count;
-		chunk_file.write(reinterpret_cast<char *>(&splits), 1);
-		uint16_t ident = i;
-		chunk_file.write(reinterpret_cast<char *>(&ident), 2);
+		int32_t ident_splits = split_count | (i << 10);
+		chunk_file.write(reinterpret_cast<char *>(&ident_splits), 3);
 		uint32_t size = input_bytes - 1;
 		chunk_file.write(reinterpret_cast<char *>(&size), 4);
 		uint32_t hash = mhc()();

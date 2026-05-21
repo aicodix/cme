@@ -34,14 +34,14 @@ int main(int argc, char **argv)
 		}
 		char magic[3];
 		chunk_file.read(magic, 3);
-		uint8_t splits;
-		chunk_file.read(reinterpret_cast<char *>(&splits), 1);
-		uint16_t ident;
-		chunk_file.read(reinterpret_cast<char *>(&ident), 2);
+		int32_t ident_splits = 0;
+		chunk_file.read(reinterpret_cast<char *>(&ident_splits), 3);
 		uint32_t size;
 		chunk_file.read(reinterpret_cast<char *>(&size), 4);
 		uint32_t hash;
 		chunk_file.read(reinterpret_cast<char *>(&hash), 4);
+		int splits = ident_splits & 1023;
+		int ident = ident_splits >> 10;
 		if (!chunk_file || magic[0] != 'C' || magic[1] != 'M' || magic[2] != 'E' || list.count(ident)) {
 			std::cerr << "Skipping file \"" << chunk_name << "\"." << std::endl;
 			continue;
