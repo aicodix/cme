@@ -7,21 +7,6 @@ Copyright 2026 Ahmet Inan <inan@aicodix.de>
 #include <set>
 #include "common.hh"
 
-static void decode_m31(std::ofstream &dst, const M31 *src, int64_t bytes)
-{
-	int count = (bytes * 8 + 30) / 31;
-	M31 sub = *src++;
-	uint64_t acc = 0;
-	int64_t pos = 0;
-	for (int i = 0, k = 0; i < count; i++) {
-		uint64_t val = sub == src[i] ? 0x7FFFFFFF : src[i]();
-		acc |= val << k;
-		k += 31;
-		for (; k >= 8 && pos < bytes; pos++, acc >>= 8, k -= 8)
-			dst.put(acc & 255);
-	}
-}
-
 int main(int argc, char **argv)
 {
 	if (argc < 3) {
@@ -85,19 +70,6 @@ int main(int argc, char **argv)
 		std::cerr << "Need " << block_count << " valid chunks but only got " << block_index << "." << std::endl;
 		return 1;
 	}
-	M31 *output_values = new M31[total_values];
-	CODE::CauchyPrimeFieldErasureCoding<M31> cme;
-	for (int i = 0; i < block_count; ++i)
-		cme.decode(output_values + block_values * i, chunk_values, chunk_ident, i, block_values, block_count);
-	delete[] chunk_ident;
-	delete[] chunk_values;
-	CODE::MersenneHornerCheck mhc;
-	for (int i = 0; i < total_values; ++i)
-		mhc(output_values[i]);
-	if (mhc()() != hash_value) {
-		std::cerr << "hash value does not match!" << std::endl;
-		return 1;
-	}
 	const char *output_name = argv[1];
 	if (output_name[0] == '-' && output_name[1] == 0)
 		output_name = "/dev/stdout";
@@ -106,8 +78,34 @@ int main(int argc, char **argv)
 		std::cerr << "Couldn't open file \"" << output_name << "\" for writing." << std::endl;
 		return 1;
 	}
-	decode_m31(output_file, output_values, output_bytes);
+	CODE::CauchyPrimeFieldErasureCoding<M31> cme;
+	CODE::MersenneHornerCheck mhc;
+	M31 sub;
+	int num = 0;
+	uint64_t acc = 0;
+	int64_t pos = 0;
+	M31 *output_values = new M31[block_values];
+	for (int i = 0; i < block_count; ++i) {
+		cme.decode(output_values, chunk_values, chunk_ident, i, block_values, block_count);
+		for (int i = 0; i < block_values; ++i)
+			mhc(output_values[i]);
+		if (!i)
+			sub = output_values[0];
+		for (int o = !i; o < block_values; o++) {
+			uint64_t val = sub == output_values[o] ? 0x7FFFFFFF : output_values[o]();
+			acc |= val << num;
+			num += 31;
+			for (; num >= 8 && pos < output_bytes; pos++, acc >>= 8, num -= 8)
+				output_file.put(acc & 255);
+		}
+	}
 	delete[] output_values;
+	delete[] chunk_ident;
+	delete[] chunk_values;
+	if (mhc()() != hash_value) {
+		std::cerr << "hash value does not match!" << std::endl;
+		return 1;
+	}
 	return 0;
 }
 
