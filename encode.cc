@@ -18,41 +18,34 @@ static void unpack_m31(std::ofstream &dst, const M31 *src, int count, int64_t by
 	}
 }
 
-template <int64_t MAX_BYTES>
-struct MersenneRemapping
+static M31 find_unused_m31(const M31 *dst, int count)
 {
 	typedef unsigned used_word;
-	static constexpr int max_count = (MAX_BYTES * 8 + 30) / 31;
-	static_assert(max_count < 0x7FFFFFFF, "Block length must be smaller than number of field values");
-	static constexpr int used_width = 8 * sizeof(used_word);
-	static constexpr int used_length = max_count / used_width + 1;
-	used_word used_values[used_length];
-	MersenneRemapping(){}
-	M31 find_unused(const M31 *dst, int count)
-	{
-		int limit = count / used_width + 1;
-		for (int i = 0; i < limit; ++i)
-			used_values[i] = 0;
-		for (int i = 0; i < count; ++i)
-			if (int(dst[i].v)/used_width < limit)
-				used_values[dst[i].v/used_width] |= 1 << dst[i].v%used_width;
-		int s = 0;
-		while (s/used_width < limit && used_values[s/used_width] & 1 << s%used_width)
-			++s;
-		return M31(s);
-	}
-	void encode(M31 *dst, std::ifstream &src, int64_t bytes)
-	{
-		assert(bytes <= MAX_BYTES);
-		int count = (bytes * 8 + 30) / 31;
-		pack_m31(dst+1, src, count, bytes);
-		M31 sub = find_unused(dst+1, count);
-		*dst++ = sub;
-		for (int i = 0; i < count; ++i)
-			if (dst[i].v == 0x7FFFFFFF)
-				dst[i] = sub;
-	}
-};
+	const int used_width = 8 * sizeof(used_word);
+	const int used_length = count / used_width + 1;
+	used_word *used_values = new used_word[used_length];
+	for (int i = 0; i < used_length; ++i)
+		used_values[i] = 0;
+	for (int i = 0; i < count; ++i)
+		if (int(dst[i].v)/used_width < used_length)
+			used_values[dst[i].v/used_width] |= 1 << dst[i].v%used_width;
+	int s = 0;
+	while (s/used_width < used_length && used_values[s/used_width] & 1 << s%used_width)
+		++s;
+	delete[] used_values;
+	return M31(s);
+}
+
+static void encode_m31(M31 *dst, std::ifstream &src, int64_t bytes)
+{
+	int count = (bytes * 8 + 30) / 31;
+	pack_m31(dst+1, src, count, bytes);
+	M31 sub = find_unused_m31(dst+1, count);
+	*dst++ = sub;
+	for (int i = 0; i < count; ++i)
+		if (dst[i].v == 0x7FFFFFFF)
+			dst[i] = sub;
+}
 
 int main(int argc, char **argv)
 {
@@ -97,9 +90,7 @@ int main(int argc, char **argv)
 	long long block_bytes = (block_values * 31LL + 7) / 8;
 	int total_values = block_values * block_count;
 	M31 *input_values = new M31[total_values];
-	auto remap = new MersenneRemapping<MAX_SIZE>();
-	remap->encode(input_values, input_file, input_bytes);
-	delete remap;
+	encode_m31(input_values, input_file, input_bytes);
 	for (int i = (31 + input_bytes * 8 + 30) / 31; i < total_values; ++i)
 		input_values[i] = M31(0);
 	CODE::MersenneHornerCheck mhc;

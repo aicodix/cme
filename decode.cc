@@ -29,7 +29,6 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	int chunk_count = argc - 2;
-	typedef CODE::PrimeField<uint32_t, 0x7FFFFFFF> M31;
 	int *chunk_ident = nullptr;
 	M31 *chunk_values = nullptr;
 	int block_values = 0;
