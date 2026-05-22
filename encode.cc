@@ -6,16 +6,18 @@ Copyright 2026 Ahmet Inan <inan@aicodix.de>
 
 #include "common.hh"
 
-static void unpack_m31(std::ofstream &dst, const M31 *src, int count, int64_t bytes)
+static void unpack_m31(std::ofstream &dst, const M31 *src, int count)
 {
 	uint64_t acc = 0;
-	int64_t pos = 0;
-	for (int i = 0, k = 0; i < count; i++) {
-		acc |= uint64_t(src[i].v) << k;
-		k += 31;
-		for (; (k >= 8 || i == count - 1) && pos < bytes; pos++, acc >>= 8, k -= 8)
+	int num = 0;
+	for (int i = 0; i < count; i++) {
+		acc |= uint64_t(src[i].v) << num;
+		num += 31;
+		for (; num >= 8; acc >>= 8, num -= 8)
 			dst.put(acc & 255);
 	}
+	if (num)
+		dst.put(acc & 255);
 }
 
 static M31 find_unused_m31(const M31 *dst, int count)
@@ -87,7 +89,6 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	int block_values = (31 + input_bytes * 8 + block_count * 31 - 1) / (block_count * 31);
-	long long block_bytes = (block_values * 31LL + 7) / 8;
 	int total_values = block_values * block_count;
 	M31 *input_values = new M31[total_values];
 	M31 sub = encode_m31(input_values+1, input_file, input_bytes);
@@ -115,7 +116,7 @@ int main(int argc, char **argv)
 		chunk_file.write(reinterpret_cast<char *>(&size), 4);
 		uint32_t hash = mhc()();
 		chunk_file.write(reinterpret_cast<char *>(&hash), 4);
-		unpack_m31(chunk_file, chunk_values, block_values, block_bytes);
+		unpack_m31(chunk_file, chunk_values, block_values);
 	}
 	delete[] input_values;
 	delete[] chunk_values;
