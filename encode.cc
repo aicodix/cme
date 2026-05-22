@@ -36,15 +36,15 @@ static M31 find_unused_m31(const M31 *dst, int count)
 	return M31(s);
 }
 
-static void encode_m31(M31 *dst, std::ifstream &src, int64_t bytes)
+static M31 encode_m31(M31 *dst, std::ifstream &src, int64_t bytes)
 {
 	int count = (bytes * 8 + 30) / 31;
-	pack_m31(dst+1, src, count, bytes);
-	M31 sub = find_unused_m31(dst+1, count);
-	*dst++ = sub;
+	pack_m31(dst, src, count, bytes);
+	M31 sub = find_unused_m31(dst, count);
 	for (int i = 0; i < count; ++i)
 		if (dst[i].v == 0x7FFFFFFF)
 			dst[i] = sub;
+	return sub;
 }
 
 int main(int argc, char **argv)
@@ -90,7 +90,8 @@ int main(int argc, char **argv)
 	long long block_bytes = (block_values * 31LL + 7) / 8;
 	int total_values = block_values * block_count;
 	M31 *input_values = new M31[total_values];
-	encode_m31(input_values, input_file, input_bytes);
+	M31 sub = encode_m31(input_values+1, input_file, input_bytes);
+	input_values[0] = sub;
 	for (int i = (31 + input_bytes * 8 + 30) / 31; i < total_values; ++i)
 		input_values[i] = M31(0);
 	CODE::MersenneHornerCheck mhc;
