@@ -55,6 +55,11 @@ int main(int argc, char **argv)
 		std::cerr << "usage: " << argv[0] << " INPUT SPLITS CHUNKS.." << std::endl;
 		return 1;
 	}
+	int chunk_count = argc - 3;
+	if (chunk_count > 16384) {
+		std::cerr << "Maximum of 16384 chunks are supported." << std::endl;
+		return 1;
+	}
 	const char *input_name = argv[1];
 	struct stat sb;
 	if (stat(input_name, &sb) < 0 || sb.st_size < 1) {
@@ -72,14 +77,9 @@ int main(int argc, char **argv)
 		std::cerr << "Number of splits must be between 0 and 1023." << std::endl;
 		return 1;
 	}
-	int chunk_count = argc - 3;
 	int block_count = split_count + 1;
 	if (chunk_count < block_count) {
 		std::cerr << "Need at least " << block_count << " chunks." << std::endl;
-		return 1;
-	}
-	if (chunk_count > 16384) {
-		std::cerr << "Maximum of 16384 chunks are supported." << std::endl;
 		return 1;
 	}
 	std::cerr << "CME(" << chunk_count << ", " << block_count << ")" << std::endl;
