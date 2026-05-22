@@ -9,18 +9,18 @@ Create file ```input.dat``` with ```128KiB``` of random data:
 dd if=/dev/urandom of=input.dat bs=512 count=256
 ```
 
-Split file ```input.dat``` 123 times and encode a thousand redundant chunk files, each about a kilobyte in size:
+Encode file ```input.dat``` to a thousand chunk files, each of ```1024``` bytes in size:
 
 ```
-./encode input.dat 123 chunk{000..999}.cme
+./encode input.dat 1024 chunk{000..999}.cme
 ```
 
-Output should be ```CME(1000, 124)```, which means we only need any 124 chunks of the 1000 encoded.
+Output should be ```CME(1000, 131)```, which means we only need any 131 chunks of the 1000 encoded.
 
-Randomly delete (erase) 876 chunk files to only keep 124:
+Randomly delete (erase) 869 chunk files to only keep 131:
 
 ```
-ls chunk*.cme | sort -R | head -n 876 | xargs rm
+ls chunk*.cme | sort -R | head -n 869 | xargs rm
 ```
 
 Decode ```output.dat``` from remaining chunk files:

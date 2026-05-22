@@ -10,7 +10,7 @@ CXX = clang++ -stdlib=libc++ -march=native
 #QEMU = qemu-aarch64
 
 CHUNKS := $(shell seq -f "chunk%03g.cme" 0 999)
-ERASED := $(shell seq -f "chunk%03g.cme" 0 999 | sort -R | head -n 124)
+ERASED := $(shell seq -f "chunk%03g.cme" 0 999 | sort -R | head -n 131)
 
 .PHONY: all
 
@@ -18,7 +18,7 @@ all: encode decode
 
 test: encode decode
 	dd if=/dev/urandom of=input.dat bs=512 count=256
-	$(QEMU) ./encode input.dat 123 $(CHUNKS)
+	$(QEMU) ./encode input.dat 1024 $(CHUNKS)
 	$(QEMU) ./decode output.dat $(ERASED)
 	diff -q -s input.dat output.dat
 	rm input.dat output.dat $(CHUNKS)

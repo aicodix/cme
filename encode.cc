@@ -52,7 +52,7 @@ static M31 encode_m31(M31 *dst, std::ifstream &src, int64_t bytes)
 int main(int argc, char **argv)
 {
 	if (argc < 4) {
-		std::cerr << "usage: " << argv[0] << " INPUT SPLITS CHUNKS.." << std::endl;
+		std::cerr << "usage: " << argv[0] << " INPUT SIZE CHUNKS.." << std::endl;
 		return 1;
 	}
 	int chunk_count = argc - 3;
@@ -72,12 +72,16 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	long long input_bytes = sb.st_size;
-	int split_count = std::atoi(argv[2]);
-	if (split_count < 0 || split_count > 1023) {
-		std::cerr << "Number of splits must be between 0 and 1023." << std::endl;
+	long long chunk_bytes = std::atoll(argv[2]);
+	long long cme_overhead = 3 + 3 + 4 + 4; // CME (IDENT+SPLITS) SIZE HASH
+	long long avail_bytes = chunk_bytes - cme_overhead;
+	long long avail_values = (avail_bytes * 8) / 31;
+	long long avail_bits = avail_values * 31LL;
+	int block_count = (31 + input_bytes * 8 + avail_bits - 1) / avail_bits;
+	if (avail_values < 1 || block_count > 1024) {
+		std::cerr << "Size of chunks too small." << std::endl;
 		return 1;
 	}
-	int block_count = split_count + 1;
 	if (chunk_count < block_count) {
 		std::cerr << "Need at least " << block_count << " chunks." << std::endl;
 		return 1;
@@ -110,7 +114,7 @@ int main(int argc, char **argv)
 			return 1;
 		}
 		chunk_file.write("CME", 3);
-		int32_t ident_splits = split_count | (i << 10);
+		int32_t ident_splits = (block_count - 1) | (i << 10);
 		chunk_file.write(reinterpret_cast<char *>(&ident_splits), 3);
 		uint32_t size = input_bytes - 1;
 		chunk_file.write(reinterpret_cast<char *>(&size), 4);
