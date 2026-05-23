@@ -18,7 +18,7 @@ all: encode decode
 
 test: encode decode
 	dd if=/dev/urandom of=input.dat bs=512 count=256
-	$(QEMU) ./encode input.dat 1024 $(CHUNKS)
+	$(QEMU) ./encode input.dat 1k $(CHUNKS)
 	$(QEMU) ./decode output.dat $(ERASED)
 	diff -q -s input.dat output.dat
 	rm input.dat output.dat $(CHUNKS)

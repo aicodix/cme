@@ -49,6 +49,24 @@ static M31 encode_m31(M31 *dst, std::ifstream &src, int64_t bytes)
 	return sub;
 }
 
+static long long parse_bytes(const char *str)
+{
+	char *end;
+	long long bytes = std::strtoll(str, &end, 10);
+	switch (*end) {
+	case 'k':
+	case 'K':
+		return bytes << 10;
+	case 'm':
+	case 'M':
+		return bytes << 20;
+	case 'g':
+	case 'G':
+		return bytes << 30;
+	}
+	return bytes;
+}
+
 int main(int argc, char **argv)
 {
 	if (argc < 4) {
@@ -72,7 +90,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	long long input_bytes = sb.st_size;
-	long long chunk_bytes = std::atoll(argv[2]);
+	long long chunk_bytes = parse_bytes(argv[2]);
 	long long cme_overhead = 3 + 3 + 4 + 4; // CME (IDENT+SPLITS) SIZE HASH
 	long long avail_bytes = chunk_bytes - cme_overhead;
 	long long avail_values = (avail_bytes * 8) / 31;

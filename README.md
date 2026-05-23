@@ -12,7 +12,7 @@ dd if=/dev/urandom of=input.dat bs=512 count=256
 Encode file ```input.dat``` to a thousand chunk files, each of ```1024``` bytes in size:
 
 ```
-./encode input.dat 1024 chunk{000..999}.cme
+./encode input.dat 1k chunk{000..999}.cme
 ```
 
 Output should be ```CME(1000, 131)```, which means we only need any 131 chunks of the 1000 encoded.
