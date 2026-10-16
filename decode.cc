@@ -62,7 +62,7 @@ int main(int argc, char **argv)
 		}
 		list.insert(ident);
 		chunk_ident[block_index] = ident + block_count;
-		pack_m31(chunk_values + block_values * i, chunk_file, block_values, block_bytes);
+		pack_m31(chunk_values + block_values * block_index, chunk_file, block_values, block_bytes);
 		if (++block_index >= block_count)
 			break;
 	}
