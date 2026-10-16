@@ -91,7 +91,7 @@ int main(int argc, char **argv)
 			mhc(output_values[i]);
 		if (!i)
 			sub = output_values[0];
-		for (int o = !i; o < block_values; o++) {
+		for (int o = !i; o < block_values && pos < output_bytes; o++) {
 			uint64_t val = sub == output_values[o] ? 0x7FFFFFFF : output_values[o]();
 			acc |= val << num;
 			num += 31;
